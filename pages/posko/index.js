@@ -38,7 +38,7 @@ export default function PoskoPage() {
                     {/* Bagian Header digabung ke dalam kartu */}
                     <div className="text-center">
                         <img
-                            src="https://cdni.iconscout.com/illustration/premium/thumb/man-finding-right-direction-4731336-3927498.png"
+                            src="/posko.svg"
                             alt="Ilustrasi orang mencari arah"
                             className="w-56 h-auto mx-auto mb-4"
                         />

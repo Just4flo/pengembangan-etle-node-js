@@ -24,8 +24,8 @@ export default function Navbar() {
             <div className="max-w-7xl mx-auto px-4 flex justify-between items-center h-16">
                 {/* Logo */}
                 <div className="flex items-center space-x-2">
-                    <Image src="/etle.png" alt="Korlantas" width={40} height={40} />
-                    <span className="font-semibold text-lg">ETLE System</span>
+                    <Image src="/LOGO.svg" alt="Korlantas" width={40} height={40} />
+                    <span className="font-semibold text-lg">KORLANTAS</span>
                 </div>
 
                 {/* Menu Desktop */}
@@ -39,7 +39,7 @@ export default function Navbar() {
                             onClick={() => toggleDropdown("etle")}
                             className="flex items-center gap-2 hover:text-gray-300"
                         >
-                            <FaInfoCircle /> Tentang ETLE <FaChevronDown size={12} />
+                            <FaInfoCircle /> KORLANTAS <FaChevronDown size={12} />
                         </button>
                         {dropdown === "etle" && (
                             <div className="absolute bg-black text-white mt-2 rounded shadow-lg w-40">
