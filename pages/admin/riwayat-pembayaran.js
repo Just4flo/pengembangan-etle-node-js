@@ -10,41 +10,47 @@ export default function RiwayatPembayaranPage() {
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        const fetchPayments = async () => {
+        const fetchAllViolations = async () => {
             try {
-                // Buat query untuk mengambil semua data dari 'pembayaran_berhasil'
-                // dan urutkan berdasarkan tanggal pembayaran terbaru
-                const paymentsRef = collection(db, 'pembayaran_berhasil');
-                const q = query(paymentsRef, orderBy('tanggalPembayaran', 'desc'));
+                // 📌 1. Ambil data dari DUA koleksi secara bersamaan
+                const unpaidRef = collection(db, 'pelanggaran');
+                const paidRef = collection(db, 'pembayaran_berhasil');
 
-                const querySnapshot = await getDocs(q);
+                const [unpaidSnapshot, paidSnapshot] = await Promise.all([
+                    getDocs(unpaidRef),
+                    getDocs(paidRef)
+                ]);
 
-                const paymentsData = querySnapshot.docs.map(doc => ({
-                    id: doc.id, // ID dokumen (No. Polisi)
-                    ...doc.data()
-                }));
+                const unpaidData = unpaidSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                const paidData = paidSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-                setPayments(paymentsData);
+                // 2. Gabungkan kedua data menjadi satu array
+                const allViolations = [...unpaidData, ...paidData];
+
+                // 3. Urutkan berdasarkan tanggal pelanggaran terbaru
+                allViolations.sort((a, b) => b.tanggalPelanggaran.seconds - a.tanggalPelanggaran.seconds);
+
+                setPayments(allViolations);
             } catch (err) {
-                console.error("Error fetching payment history: ", err);
-                setError("Gagal memuat data riwayat pembayaran.");
+                console.error("Error fetching violations: ", err);
+                setError("Gagal memuat data pelanggaran.");
             } finally {
                 setIsLoading(false);
             }
         };
 
-        fetchPayments();
-    }, []); // Dijalankan hanya sekali saat komponen dimuat
+        fetchAllViolations();
+    }, []);
 
     return (
         <AdminLayout>
             <div className="w-full mx-auto p-8 bg-white rounded-2xl shadow-xl">
                 <div className="text-center mb-8">
-                    <h2 className="text-3xl font-bold text-slate-800">Riwayat Pembayaran Berhasil</h2>
-                    <p className="text-slate-500 mt-2">Daftar semua pelanggaran yang telah lunas dibayar.</p>
+                    {/* Judul diubah agar lebih sesuai */}
+                    <h2 className="text-3xl font-bold text-slate-800">Status Pelanggaran & Pembayaran</h2>
+                    <p className="text-slate-500 mt-2">Daftar semua pelanggaran yang tercatat, baik yang sudah maupun belum dibayar.</p>
                 </div>
 
-                {/* Tampilan Loading */}
                 {isLoading && (
                     <div className="flex justify-center items-center p-12">
                         <FaSpinner className="animate-spin text-blue-500 text-4xl" />
@@ -52,10 +58,8 @@ export default function RiwayatPembayaranPage() {
                     </div>
                 )}
 
-                {/* Tampilan Error */}
                 {error && <p className="text-center text-red-600">{error}</p>}
 
-                {/* Tampilan Tabel Jika Data Ada */}
                 {!isLoading && !error && (
                     <div className="overflow-x-auto">
                         <table className="min-w-full bg-white">
@@ -64,7 +68,8 @@ export default function RiwayatPembayaranPage() {
                                     <th className="py-3 px-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">No</th>
                                     <th className="py-3 px-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">No. Polisi</th>
                                     <th className="py-3 px-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Nama Pemilik</th>
-                                    <th className="py-3 px-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Jenis Pelanggaran</th>
+                                    {/* 📌 4. Tambahkan kolom "Status" */}
+                                    <th className="py-3 px-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Status</th>
                                     <th className="py-3 px-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Tanggal Pembayaran</th>
                                 </tr>
                             </thead>
@@ -75,19 +80,30 @@ export default function RiwayatPembayaranPage() {
                                             <td className="py-3 px-4">{index + 1}</td>
                                             <td className="py-3 px-4 font-medium">{payment.noPolisi}</td>
                                             <td className="py-3 px-4">{payment.pemilik}</td>
-                                            <td className="py-3 px-4">{payment.jenisPelanggaran}</td>
+                                            {/* 📌 5. Tampilkan status dengan warna */}
+                                            <td className="py-3 px-4">
+                                                <span className={`inline-block px-2 py-1 text-xs font-semibold rounded-full ${payment.status === 'Sudah Dibayar'
+                                                        ? 'bg-green-100 text-green-800'
+                                                        : 'bg-red-100 text-red-800'
+                                                    }`}>
+                                                    {payment.status}
+                                                </span>
+                                            </td>
                                             <td className="py-3 px-4 text-sm">
-                                                {new Date(payment.tanggalPembayaran.seconds * 1000).toLocaleString('id-ID', {
-                                                    dateStyle: 'medium',
-                                                    timeStyle: 'short'
-                                                })}
+                                                {/* Tampilkan tanggal jika ada, jika tidak tampilkan strip */}
+                                                {payment.tanggalPembayaran
+                                                    ? new Date(payment.tanggalPembayaran.seconds * 1000).toLocaleString('id-ID', {
+                                                        dateStyle: 'medium',
+                                                        timeStyle: 'short'
+                                                    })
+                                                    : '-'}
                                             </td>
                                         </tr>
                                     ))
                                 ) : (
                                     <tr>
                                         <td colSpan="5" className="text-center py-10 text-slate-500">
-                                            Belum ada data pembayaran yang tersimpan.
+                                            Belum ada data pelanggaran yang tercatat.
                                         </td>
                                     </tr>
                                 )}

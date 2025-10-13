@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { doc, setDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../../config/firebase';
-import AdminLayout from '../../components/admin/AdminLayout';
+import AdminLayout from '../../components/admin/AdminLayout'; // Kunci keamanan ada di sini
 
-// Import icons
-import { FaCar, FaCog, FaUser, FaRoad, FaCalendarAlt, FaPalette, FaHashtag, FaPlus, FaTachometerAlt } from 'react-icons/fa';
+// Impor ikon
+import { FaCar, FaCog, FaUser, FaRoad, FaCalendarAlt, FaPalette, FaHashtag, FaPlus, FaTachometerAlt, FaSpinner } from 'react-icons/fa';
 
 export default function InputKendaraanPage() {
     const [formData, setFormData] = useState({
@@ -49,6 +49,8 @@ export default function InputKendaraanPage() {
         }
     };
 
+    // Kabar baik! Perlindungan ini sudah aktif karena seluruh konten di bawah
+    // dibungkus oleh komponen <AdminLayout>.
     return (
         <AdminLayout>
             <div className="w-full max-w-4xl mx-auto p-8 bg-white rounded-2xl shadow-xl">
@@ -58,6 +60,11 @@ export default function InputKendaraanPage() {
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
+                    {message.text && (
+                        <div className={`p-3 rounded-lg text-center text-sm ${message.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                            {message.text}
+                        </div>
+                    )}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="relative">
                             <FaCar className="absolute top-3.5 left-4 text-slate-400" />
@@ -71,7 +78,6 @@ export default function InputKendaraanPage() {
                             <FaCog className="absolute top-3.5 left-4 text-slate-400" />
                             <input id="noMesin" value={formData.noMesin} onChange={handleInputChange} placeholder="No. Mesin" className="w-full p-3 pl-12 border rounded-lg text-slate-900" required />
                         </div>
-
                         <div className="relative">
                             <FaUser className="absolute top-3.5 left-4 text-slate-400" />
                             <input id="namaPemilik" value={formData.namaPemilik} onChange={handleInputChange} placeholder="Nama Pemilik" className="w-full p-3 pl-12 border rounded-lg text-slate-900" required />
@@ -80,7 +86,6 @@ export default function InputKendaraanPage() {
                             <FaRoad className="absolute top-3.5 left-4 text-slate-400" />
                             <input id="alamatPemilik" value={formData.alamatPemilik} onChange={handleInputChange} placeholder="Alamat Pemilik" className="w-full p-3 pl-12 border rounded-lg text-slate-900" required />
                         </div>
-
                         <div className="relative">
                             <input id="merk" value={formData.merk} onChange={handleInputChange} placeholder="Merk (Contoh: Toyota)" className="w-full p-3 border rounded-lg text-slate-900" required />
                         </div>
@@ -90,7 +95,7 @@ export default function InputKendaraanPage() {
                         <div className="relative">
                             <input id="tipe" value={formData.tipe} onChange={handleInputChange} placeholder="Tipe (Contoh: Minibus)" className="w-full p-3 border rounded-lg text-slate-900" required />
                         </div>
-                        <div className="relative">
+                        _                        <div className="relative">
                             <FaPalette className="absolute top-3.5 left-4 text-slate-400" />
                             <input id="warna" value={formData.warna} onChange={handleInputChange} placeholder="Warna" className="w-full p-3 pl-12 border rounded-lg text-slate-900" required />
                         </div>
@@ -108,14 +113,8 @@ export default function InputKendaraanPage() {
                         </div>
                     </div>
 
-                    {message.text && (
-                        <div className={`p-3 rounded-lg text-center text-sm ${message.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                            {message.text}
-                        </div>
-                    )}
-
                     <button type="submit" disabled={isLoading} className="flex items-center justify-center gap-2 w-full py-3 font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:bg-slate-400 transition-colors">
-                        <FaPlus />
+                        {isLoading ? <FaSpinner className="animate-spin" /> : <FaPlus />}
                         {isLoading ? 'Menyimpan...' : 'Simpan Data Kendaraan'}
                     </button>
                 </form>
