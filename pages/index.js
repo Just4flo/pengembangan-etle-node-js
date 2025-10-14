@@ -3,6 +3,7 @@ import Image from 'next/image';
 import Navbar from "../components/Navbar";
 import Footer from '../components/Footer';
 import { FaCameraRetro, FaIdCard, FaEnvelope, FaDesktop, FaFileInvoiceDollar, FaBan } from 'react-icons/fa';
+import { useState, useEffect } from 'react';
 
 export default function Home() {
   const etleSteps = [
@@ -16,12 +17,60 @@ export default function Home() {
 
   const stepIcons = [FaCameraRetro, FaIdCard, FaEnvelope, FaDesktop, FaFileInvoiceDollar, FaBan];
 
-  const latestVideos = [
-    { title: "HUT LALU LINTAS BHAYANGKARA KE-69 2024", channel: "@NTMCKorlantasPolri", thumbnail: "/images/video1.jpg", href: "#" },
-    { title: "Lapor NTMC | Shock, kaget liat kelakuan pengendara di Konoha", channel: "@NTMCKorlantasPolri", thumbnail: "/images/video2.jpg", href: "#" },
-    { title: "Lapor NTMC | JANGAN DIPAKSA, NYALIP YA MAS, BAHAYA!!!", channel: "@NTMCKorlantasPolri", thumbnail: "/images/video3.jpg", href: "#" },
+  const initialVideos = [
+    { youtubeUrl: "https://youtu.be/VZ9cQujyyuc?si=wENvYGID5Lp35hWy" },
+    { youtubeUrl: "https://youtu.be/QirqN70NSE4?si=65SMDYbuKinrX8Yb" }, // Contoh URL YouTube lainnya
+    { youtubeUrl: "https://youtu.be/2UN-MpPuMKI?si=Wq0lJMdqKI7UFezn" }, // Contoh URL YouTube lainnya
   ];
 
+  const [latestVideos, setLatestVideos] = useState([]); // 📌 State untuk menyimpan video dengan data lengkap
+  const [loadingVideos, setLoadingVideos] = useState(true);
+
+  // 📌 Fungsi untuk mengekstrak ID video dari URL YouTube
+  const getYoutubeVideoId = (url) => {
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+  };
+
+  // 📌 useEffect untuk mengambil data video saat komponen dimuat
+  useEffect(() => {
+    const fetchVideoDetails = async () => {
+      const videosWithDetails = await Promise.all(
+        initialVideos.map(async (video) => {
+          const videoId = getYoutubeVideoId(video.youtubeUrl);
+          if (videoId) {
+            try {
+              // Panggil API Route yang baru dibuat
+              const response = await fetch(`/api/youtube?videoId=${videoId}`);
+              const data = await response.json();
+              if (data.title && data.channelTitle && data.thumbnailUrl) {
+                return {
+                  title: data.title,
+                  channel: data.channelTitle,
+                  thumbnail: data.thumbnailUrl,
+                  href: video.youtubeUrl,
+                };
+              }
+            } catch (error) {
+              console.error(`Failed to fetch details for video ID ${videoId}:`, error);
+            }
+          }
+          // Fallback jika gagal mengambil detail
+          return {
+            title: "Video Tidak Tersedia",
+            channel: "N/A",
+            thumbnail: "/images/default-thumbnail.jpg", // Pastikan gambar ini ada
+            href: video.youtubeUrl,
+          };
+        })
+      );
+      setLatestVideos(videosWithDetails);
+      setLoadingVideos(false);
+    };
+
+    fetchVideoDetails();
+  }, []); // Hanya dijalankan sekali saat komponen pertama kali dimuat
   return (
     <div className="flex flex-col min-h-screen bg-slate-900 text-slate-300">
       <Navbar />
@@ -112,15 +161,21 @@ export default function Home() {
               Yuk, ikuti video terbaru dari Korlantas
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {latestVideos.map((video) => (
-                <a key={video.title} href={video.href} target="_blank" rel="noopener noreferrer" className="block group border rounded-lg overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
-                  <Image src={video.thumbnail} alt={video.title} width={600} height={400} className="w-full object-cover" />
-                  <div className="p-4 bg-white">
-                    <h3 className="font-bold group-hover:text-blue-600 transition-colors">{video.title}</h3>
-                    <p className="text-sm text-slate-500 mt-2">{video.channel}</p>
-                  </div>
-                </a>
-              ))}
+              {loadingVideos ? (
+                // 📌 Tampilan loading jika video sedang diambil
+                <div className="col-span-full text-center text-slate-600">Memuat video...</div>
+              ) : (
+                latestVideos.map((video) => (
+                  <a key={video.title} href={video.href} target="_blank" rel="noopener noreferrer" className="block group border rounded-lg overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
+                    {/* Menggunakan thumbnail dari API */}
+                    <Image src={video.thumbnail} alt={video.title} width={600} height={400} className="w-full object-cover" />
+                    <div className="p-4 bg-white">
+                      <h3 className="font-bold group-hover:text-blue-600 transition-colors">{video.title}</h3>
+                      <p className="text-sm text-slate-500 mt-2">{video.channel}</p>
+                    </div>
+                  </a>
+                ))
+              )}
             </div>
           </div>
         </section>

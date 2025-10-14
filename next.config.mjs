@@ -7,7 +7,14 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'placehold.co',
       },
-      // Anda bisa menambahkan hostname lain di sini nanti
+      {
+        protocol: 'https',
+        hostname: 'img.youtube.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'i.ytimg.com',
+      },
     ],
   },
 };
