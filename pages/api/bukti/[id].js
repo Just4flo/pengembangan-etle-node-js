@@ -3,8 +3,8 @@
 import puppeteer from 'puppeteer-core'; // Core package
 import chromium from '@sparticuz/chromium'; // Lightweight Chrome for serverless
 import { doc, getDoc } from 'firebase/firestore';
-// PASTIKAN PATH INI BENAR menunjuk ke file firebase.js Anda
-import { db } from '../../../config/firebase';
+// PASTIKAN PATH INI BENAR
+import { db } from '../../../config/firebase'; 
 
 // Fungsi generateHtmlContent (Aman dari error)
 function generateHtmlContent(data) {
@@ -12,13 +12,20 @@ function generateHtmlContent(data) {
     const tglBayarObj = data.tglBayar instanceof Date ? data.tglBayar : new Date();
     const tglBayarFormatted = tglBayarObj.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
 
+<<<<<<< HEAD
     // HTML Content (sesuaikan jika perlu)
+=======
+>>>>>>> 853af8839012ae806c79fbd0eb35cd9e21645c97
     return `
     <html>
     <head>
         <title>Bukti Pembayaran ETLE</title>
         <style>
+<<<<<<< HEAD
             body { font-family: Arial, sans-serif; padding: 30px; margin: 0; background-color: #ffffff; width: 595px; /* A4 width approx */ }
+=======
+            body { font-family: Arial, sans-serif; padding: 30px; margin: 0; background-color: #ffffff; width: 595px; /* A4 width approx */ } 
+>>>>>>> 853af8839012ae806c79fbd0eb35cd9e21645c97
             .header { color: #c53030; text-align: center; border-bottom: 2px solid #c53030; padding-bottom: 10px; margin-bottom: 20px;}
             .detail-box { border: 1px solid #ccc; padding: 15px; border-radius: 8px; margin-bottom: 20px;}
             table { width: 100%; border-collapse: collapse; margin-top: 20px; }
@@ -52,18 +59,26 @@ function generateHtmlContent(data) {
   `;
 }
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 853af8839012ae806c79fbd0eb35cd9e21645c97
 // --- HANDLER API (Untuk Hosting - Output PNG) ---
 export default async function handler(req, res) {
     if (req.method !== 'GET') {
         return res.status(405).json({ message: 'Method Not Allowed' });
     }
 
+<<<<<<< HEAD
     const { id } = req.query; // No Polisi (ID Dokumen)
+=======
+    const { id } = req.query; 
+>>>>>>> 853af8839012ae806c79fbd0eb35cd9e21645c97
     let browser = null;
 
     try {
         // --- 1. Ambil Data Pembayaran DARI 'pembayaran_berhasil' ---
-        const docRef = doc(db, 'pembayaran_berhasil', id);
+        const docRef = doc(db, 'pembayaran_berhasil', id); 
         const docSnap = await getDoc(docRef);
 
         if (!docSnap.exists()) {
@@ -76,7 +91,7 @@ export default async function handler(req, res) {
             noReferensi: dataFromDb.noReferensi || 'N/A',
             noPolisi: dataFromDb.noPolisi || id,
             nama: dataFromDb.konfirmasiPengemudi?.pengemudi?.namaPengemudi || dataFromDb.pemilik || 'N/A',
-            denda: dataFromDb.denda || 0,
+            denda: dataFromDb.denda || 0, 
             brivaNumber: dataFromDb.brivaCode || 'N/A',
             // Konversi Timestamp ke Date jika ada, jika tidak, tanggal sekarang
             tglBayar: dataFromDb.tanggalPembayaran ? dataFromDb.tanggalPembayaran.toDate() : new Date(),
@@ -86,7 +101,10 @@ export default async function handler(req, res) {
         const htmlContent = generateHtmlContent(dataForHtml);
 
         // --- 4. Setup Puppeteer & Chromium (Untuk Hosting) ---
+<<<<<<< HEAD
         // PENTING: Pastikan variabel environment CHROMIUM_PATH diset di Vercel jika diperlukan
+=======
+>>>>>>> 853af8839012ae806c79fbd0eb35cd9e21645c97
         browser = await puppeteer.launch({
             args: chromium.args,
             defaultViewport: chromium.defaultViewport,
@@ -96,6 +114,7 @@ export default async function handler(req, res) {
         });
 
         const page = await browser.newPage();
+<<<<<<< HEAD
         await page.setViewport({ width: 595, height: 842 }); // Atur ukuran (opsional)
 
         // --- 5. Render HTML dan Buat Screenshot (PNG) ---
@@ -107,6 +126,19 @@ export default async function handler(req, res) {
 
         // --- 6. Kirim respons sebagai file PNG ---
         res.setHeader('Content-Type', 'image/png');
+=======
+        await page.setViewport({ width: 595, height: 842 }); // Atur ukuran
+
+        // --- 5. Render HTML dan Buat Screenshot (PNG) ---
+        await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+        const imageBuffer = await page.screenshot({ 
+            type: 'png',       
+            fullPage: true     
+        });
+
+        // --- 6. Kirim respons sebagai file PNG ---
+        res.setHeader('Content-Type', 'image/png'); 
+>>>>>>> 853af8839012ae806c79fbd0eb35cd9e21645c97
         res.setHeader('Content-Disposition', `attachment; filename="Bukti_Pembayaran_ETLE_${id}.png"`);
         res.send(imageBuffer);
 
