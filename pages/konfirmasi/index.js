@@ -1,15 +1,17 @@
+// pages/konfirmasi/index.js
 import { useState } from 'react';
-import Navbar from "../../components/Navbar";
+import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import Step1 from '../../components/konfirmasi/Step1';
 import Step2 from '../../components/konfirmasi/Step2';
 import Step3 from '../../components/konfirmasi/Step3';
 import Step4 from '../../components/konfirmasi/Step4';
 import Step5 from '../../components/konfirmasi/Step5';
+// Pastikan path ini benar:
 import { db } from '../../config/firebase';
 import { collection, query, where, getDocs, doc, updateDoc, setDoc, deleteDoc } from 'firebase/firestore';
 
-// Komponen Stepper yang sudah diperbaiki
+// Komponen Stepper (tetap sama)
 const Stepper = ({ currentStep }) => {
     const steps = ['Konfirmasi Pelanggaran', 'Status Pelanggaran', 'Konfirmasi Kendaraan', 'Ringkasan', 'Pembayaran'];
     return (
@@ -35,50 +37,73 @@ export default function KonfirmasiPage() {
     const [currentStep, setCurrentStep] = useState(1);
     const [formData, setFormData] = useState({ noReferensi: '', noPolisi: '' });
     const [violationData, setViolationData] = useState(null);
-    const [confirmationData, setConfirmationData] = useState(null);
+    const [confirmationData, setConfirmationData] = useState(null); // Data konfirmasi pengemudi
     const [isLoading, setIsLoading] = useState(false);
     const [message, setMessage] = useState('');
 
-    const handleStep1Submit = async (event) => {
-        event.preventDefault();
+    // Asumsi Kode BRIVA dibuat di sini dan diteruskan ke Step 5
+    const [brivaNumber, setBrivaNumber] = useState(null);
+
+    // --- LOGIC UTAMA: CEK DATA FIREBASE (STEP 1) ---
+    const handleStep1Submit = async (e) => {
+        e.preventDefault();
         setIsLoading(true);
         setMessage('');
+
         try {
+            // Pastikan Anda sudah membuat index di Firebase untuk query ini!
             const pelanggaranRef = collection(db, 'pelanggaran');
             const q = query(pelanggaranRef,
                 where("noReferensi", "==", formData.noReferensi.trim()),
-                where("noPolisi", "==", formData.noPolisi.trim())
+                where("noPolisi", "==", formData.noPolisi.trim().toUpperCase())
             );
             const querySnapshot = await getDocs(q);
+
             if (!querySnapshot.empty) {
                 const foundData = querySnapshot.docs[0].data();
                 setViolationData(foundData);
-                setCurrentStep(2);
+                // Set BRIVA Number saat data ditemukan
+                setBrivaNumber(`88755${Math.floor(Math.random() * 90000000) + 10000000}`);
+                setCurrentStep(2); // Pindah ke Status Pelanggaran
             } else {
                 setMessage('Data tidak ditemukan. Pastikan No. Referensi dan No. Polisi benar.');
             }
         } catch (error) {
             console.error("Error mencari data:", error);
-            setMessage('Terjadi kesalahan koneksi. (Jika ini pertama kali, cek console browser untuk link pembuatan index Firebase)');
+            setMessage('Terjadi kesalahan koneksi.');
         } finally {
             setIsLoading(false);
         }
     };
+    // ---------------------------------------------------------------------------------
 
+
+    // --- LOGIC FINAL SUBMIT (STEP 4) ---
     const handleFinalSubmit = async () => {
         if (!violationData) return;
         try {
-            const docRef = doc(db, 'pelanggaran', violationData.noPolisi);
-            await updateDoc(docRef, { status: 'Sudah Dikonfirmasi' });
-            setCurrentStep(5);
+            // Update status pelanggaran menjadi 'Menunggu Pembayaran'
+            const docRef = doc(db, 'pelanggaran', violationData.noPolisi); // Asumsi doc ID = NoPolisi
+            await updateDoc(docRef, {
+                status: 'Menunggu Pembayaran',
+                confirmationData: confirmationData, // Simpan data konfirmasi pengemudi/kendaraan
+                brivaCode: brivaNumber, // Simpan kode BRIVA yang diterbitkan
+                tanggalKonfirmasi: new Date()
+            });
+            setCurrentStep(5); // Pindah ke Pembayaran
         } catch (error) {
             console.error("Error updating status: ", error);
             alert("Gagal menyimpan konfirmasi. Silakan coba lagi.");
         }
     };
+    // ---------------------------------------------------------------------------------
 
+    // --- LOGIC PEMBAYARAN SUKSES (DIPICU DARI STEP 5) ---
     const handleSuccessfulPayment = async () => {
-        if (!violationData) return;
+        if (!violationData) throw new Error("Data pelanggaran tidak valid.");
+
+        // Simulasikan Cek Status Pembayaran (Nyata: Cek API BRIVA)
+        // Jika status LUNAS, jalankan operasi Firestore:
         try {
             const originalDocRef = doc(db, 'pelanggaran', violationData.noPolisi);
             const historyDocRef = doc(db, 'pembayaran_berhasil', violationData.noPolisi);
@@ -87,19 +112,23 @@ export default function KonfirmasiPage() {
                 ...violationData,
                 status: 'Sudah Dibayar',
                 tanggalPembayaran: new Date(),
-                konfirmasiPengemudi: confirmationData,
+                brivaCode: brivaNumber,
             };
 
+            // 1. Pindahkan data ke koleksi pembayaran_berhasil
             await setDoc(historyDocRef, paidData);
+
+            // 2. Hapus data dari koleksi pelanggaran (Opsional)
             await deleteDoc(originalDocRef);
 
-            console.log(`Dokumen untuk ${violationData.noPolisi} berhasil dipindahkan ke 'pembayaran_berhasil'.`);
+            return violationData.noPolisi; // Mengembalikan ID untuk download PDF
+
         } catch (error) {
-            console.error("Error memindahkan dokumen: ", error);
-            alert("Gagal memproses pembayaran. Silakan coba lagi.");
-            throw error;
+            console.error("Error memproses pembayaran/Firestore: ", error);
+            throw new Error("Gagal menyimpan status pembayaran di server.");
         }
     };
+    // ---------------------------------------------------------------------------------
 
     const renderStep = () => {
         switch (currentStep) {
@@ -108,11 +137,20 @@ export default function KonfirmasiPage() {
             case 2:
                 return <Step2 violationData={violationData} setCurrentStep={setCurrentStep} />;
             case 3:
-                return <Step3 setCurrentStep={setCurrentStep} setConfirmationData={setConfirmationData} />;
+                // Asumsi Step3 mengumpulkan data pengemudi/konfirmasi
+                return <Step3 setCurrentStep={setCurrentStep} setConfirmationData={setConfirmationData} violationData={violationData} />;
             case 4:
+                // Step 4 adalah Ringkasan dan konfirmasi akhir sebelum penerbitan BRIVA/pindah ke Step 5
                 return <Step4 setCurrentStep={setCurrentStep} violationData={violationData} confirmationData={confirmationData} handleFinalSubmit={handleFinalSubmit} />;
             case 5:
-                return <Step5 violationData={violationData} handleSuccessfulPayment={handleSuccessfulPayment} />;
+                return (
+                    <Step5
+                        violationData={violationData}
+                        handleSuccessfulPayment={handleSuccessfulPayment}
+                        brivaNumber={brivaNumber} // Kirim kode BRIVA
+                        tilangId={violationData?.noPolisi} // Kirim ID untuk download
+                    />
+                );
             default:
                 return <Step1 />;
         }
