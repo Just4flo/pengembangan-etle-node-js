@@ -25,15 +25,25 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'api.qrserver.com',
       },
-
-      // --- TAMBAHKAN BARIS INI ---
+      // Anda bisa hapus 'example.com' jika tidak lagi relevan
       {
         protocol: 'https',
         hostname: 'example.com',
       },
-      // ---------------------------
     ],
   },
+
+  // --- BAGIAN INI YANG PERLU DITAMBAHKAN ---
+  webpack: (config, { isServer }) => {
+    // Konfigurasi ini penting untuk @sparticuz/chromium agar Vercel menyertakan file .br
+    if (isServer) {
+      config.externals.push({
+        '@sparticuz/chromium': 'commonjs @sparticuz/chromium',
+      });
+    }
+    return config;
+  },
+  // ------------------------------------------
 };
 
 export default nextConfig;
