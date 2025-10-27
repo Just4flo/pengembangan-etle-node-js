@@ -1,8 +1,33 @@
+// pages/admin/riwayat-pembayaran.js
 import { useState, useEffect } from 'react';
 import AdminLayout from '../../components/admin/AdminLayout';
 import { db } from '../../config/firebase';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
-import { FaSpinner } from 'react-icons/fa';
+import { FaSpinner, FaEye, FaDownload } from 'react-icons/fa'; // Tambahkan FaEye, FaDownload
+
+// Fungsi format tanggal (aman dari error timestamp)
+const formatTanggal = (timestamp) => {
+    // Cek jika timestamp valid dan punya method toDate
+    if (timestamp && typeof timestamp.toDate === 'function') {
+        try {
+            return timestamp.toDate().toLocaleString('id-ID', {
+                year: 'numeric', month: 'short', day: 'numeric',
+                hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta'
+            });
+        } catch (e) {
+            console.error("Error formatting date:", e);
+            return 'Error Format';
+        }
+    }
+    return '-'; // Kembalikan strip jika tidak ada tanggal
+};
+
+// Fungsi format Rupiah (aman dari error)
+const formatRupiah = (number) => {
+    return (number || 0).toLocaleString('id-ID', {
+        style: 'currency', currency: 'IDR', minimumFractionDigits: 0
+    });
+};
 
 export default function RiwayatPembayaranPage() {
     const [payments, setPayments] = useState([]);
@@ -11,24 +36,31 @@ export default function RiwayatPembayaranPage() {
 
     useEffect(() => {
         const fetchAllViolations = async () => {
+            setIsLoading(true);
+            setError(null);
             try {
-                // 📌 1. Ambil data dari DUA koleksi secara bersamaan
+                // 1. Ambil data dari DUA koleksi
                 const unpaidRef = collection(db, 'pelanggaran');
                 const paidRef = collection(db, 'pembayaran_berhasil');
 
                 const [unpaidSnapshot, paidSnapshot] = await Promise.all([
-                    getDocs(unpaidRef),
-                    getDocs(paidRef)
+                    getDocs(query(unpaidRef)), // Ambil semua dari 'pelanggaran'
+                    getDocs(query(paidRef)) // Ambil semua dari 'pembayaran_berhasil'
                 ]);
 
+                // 2. Map data dan tambahkan ID jika perlu
                 const unpaidData = unpaidSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 const paidData = paidSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-                // 2. Gabungkan kedua data menjadi satu array
+                // 3. Gabungkan data
                 const allViolations = [...unpaidData, ...paidData];
 
-                // 3. Urutkan berdasarkan tanggal pelanggaran terbaru
-                allViolations.sort((a, b) => b.tanggalPelanggaran.seconds - a.tanggalPelanggaran.seconds);
+                // 4. Urutkan berdasarkan tanggal pelanggaran terbaru (jika ada)
+                allViolations.sort((a, b) => {
+                    const dateA = a.tanggalPelanggaran?.seconds || 0;
+                    const dateB = b.tanggalPelanggaran?.seconds || 0;
+                    return dateB - dateA; // Descending
+                });
 
                 setPayments(allViolations);
             } catch (err) {
@@ -42,13 +74,22 @@ export default function RiwayatPembayaranPage() {
         fetchAllViolations();
     }, []);
 
+    // Fungsi untuk mendapatkan detail konfirmasi pengemudi
+    const getDriverInfo = (konfirmasi) => {
+        if (!konfirmasi) return 'Belum Dikonfirmasi';
+        if (konfirmasi.statusKendaraan === 'sudah-dijual') return 'Dikonfirmasi Terjual';
+        if (konfirmasi.pengemudi) {
+            return `Pengemudi: ${konfirmasi.pengemudi.namaPengemudi} (SIM: ${konfirmasi.pengemudi.noSim})`;
+        }
+        return 'Data Konfirmasi Tidak Lengkap';
+    };
+
     return (
         <AdminLayout>
-            <div className="w-full mx-auto p-8 bg-white rounded-2xl shadow-xl">
+            <div className="w-full mx-auto p-6 md:p-8 bg-white rounded-2xl shadow-xl">
                 <div className="text-center mb-8">
-                    {/* Judul diubah agar lebih sesuai */}
-                    <h2 className="text-3xl font-bold text-slate-800">Status Pelanggaran & Pembayaran</h2>
-                    <p className="text-slate-500 mt-2">Daftar semua pelanggaran yang tercatat, baik yang sudah maupun belum dibayar.</p>
+                    <h2 className="text-2xl md:text-3xl font-bold text-slate-800">Riwayat Pelanggaran & Pembayaran</h2>
+                    <p className="text-slate-500 mt-2 text-sm md:text-base">Daftar semua pelanggaran yang tercatat.</p>
                 </div>
 
                 {isLoading && (
@@ -58,52 +99,75 @@ export default function RiwayatPembayaranPage() {
                     </div>
                 )}
 
-                {error && <p className="text-center text-red-600">{error}</p>}
+                {error && <p className="text-center text-red-600 bg-red-100 p-4 rounded-lg">{error}</p>}
 
                 {!isLoading && !error && (
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full bg-white">
-                            <thead className="bg-slate-100">
+                    <div className="overflow-x-auto relative shadow-md sm:rounded-lg">
+                        <table className="w-full text-sm text-left text-gray-500">
+                            <thead className="text-xs text-gray-700 uppercase bg-gray-100">
                                 <tr>
-                                    <th className="py-3 px-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">No</th>
-                                    <th className="py-3 px-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">No. Polisi</th>
-                                    <th className="py-3 px-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Nama Pemilik</th>
-                                    {/* 📌 4. Tambahkan kolom "Status" */}
-                                    <th className="py-3 px-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Status</th>
-                                    <th className="py-3 px-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Tanggal Pembayaran</th>
+                                    <th scope="col" className="py-3 px-4">No</th>
+                                    <th scope="col" className="py-3 px-4">No Polisi</th>
+                                    <th scope="col" className="py-3 px-4">Pemilik</th>
+                                    <th scope="col" className="py-3 px-4">Jenis Pelanggaran</th>
+                                    <th scope="col" className="py-3 px-4">Tgl Pelanggaran</th>
+                                    <th scope="col" className="py-3 px-4">Lokasi</th>
+                                    <th scope="col" className="py-3 px-4">Denda</th>
+                                    <th scope="col" className="py-3 px-4">Status</th>
+                                    <th scope="col" className="py-3 px-4">Tgl Bayar</th>
+                                    <th scope="col" className="py-3 px-4">Konfirmasi Pengemudi</th>
+                                    <th scope="col" className="py-3 px-4">Bukti</th>
+                                    <th scope="col" className="py-3 px-4">Aksi</th>
                                 </tr>
                             </thead>
-                            <tbody className="text-slate-700">
+                            <tbody className="text-gray-900">
                                 {payments.length > 0 ? (
-                                    payments.map((payment, index) => (
-                                        <tr key={payment.id} className="border-b border-slate-200 hover:bg-slate-50">
-                                            <td className="py-3 px-4">{index + 1}</td>
-                                            <td className="py-3 px-4 font-medium">{payment.noPolisi}</td>
-                                            <td className="py-3 px-4">{payment.pemilik}</td>
-                                            {/* 📌 5. Tampilkan status dengan warna */}
+                                    payments.map((p, index) => (
+                                        <tr key={p.noReferensi || p.id} className="bg-white border-b hover:bg-gray-50">
+                                            <td className="py-3 px-4 font-medium">{index + 1}</td>
+                                            <td className="py-3 px-4 font-bold">{p.noPolisi}</td>
+                                            <td className="py-3 px-4">{p.pemilik}</td>
+                                            <td className="py-3 px-4 max-w-[200px] truncate" title={p.jenisPelanggaran}>{p.jenisPelanggaran}</td>
+                                            <td className="py-3 px-4 whitespace-nowrap">{formatTanggal(p.tanggalPelanggaran)}</td>
+                                            <td className="py-3 px-4">{p.lokasi}</td>
+                                            <td className="py-3 px-4 font-semibold text-red-600">{formatRupiah(p.denda)}</td>
                                             <td className="py-3 px-4">
-                                                <span className={`inline-block px-2 py-1 text-xs font-semibold rounded-full ${payment.status === 'Sudah Dibayar'
-                                                        ? 'bg-green-100 text-green-800'
-                                                        : 'bg-red-100 text-red-800'
+                                                <span className={`inline-block px-2.5 py-0.5 text-xs font-semibold rounded-full whitespace-nowrap ${p.status === 'Sudah Dibayar' ? 'bg-green-100 text-green-800' :
+                                                        p.status === 'Menunggu Pembayaran' ? 'bg-blue-100 text-blue-800' :
+                                                            p.status === 'Sudah Dikonfirmasi' ? 'bg-indigo-100 text-indigo-800' :
+                                                                'bg-yellow-100 text-yellow-800' // Belum Dikonfirmasi
                                                     }`}>
-                                                    {payment.status}
+                                                    {p.status}
                                                 </span>
                                             </td>
-                                            <td className="py-3 px-4 text-sm">
-                                                {/* Tampilkan tanggal jika ada, jika tidak tampilkan strip */}
-                                                {payment.tanggalPembayaran
-                                                    ? new Date(payment.tanggalPembayaran.seconds * 1000).toLocaleString('id-ID', {
-                                                        dateStyle: 'medium',
-                                                        timeStyle: 'short'
-                                                    })
-                                                    : '-'}
+                                            <td className="py-3 px-4 whitespace-nowrap">{formatTanggal(p.tanggalPembayaran)}</td>
+                                            <td className="py-3 px-4 text-xs text-gray-600">{getDriverInfo(p.konfirmasiPengemudi)}</td>
+                                            <td className="py-3 px-4">
+                                                {p.urlFotoBukti ? (
+                                                    <a href={p.urlFotoBukti} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline flex items-center gap-1">
+                                                        <FaEye /> Lihat
+                                                    </a>
+                                                ) : '-'}
+                                            </td>
+                                            <td className="py-3 px-4">
+                                                {/* Tombol Download hanya muncul jika status "Sudah Dibayar" */}
+                                                {p.status === 'Sudah Dibayar' ? (
+                                                    <a
+                                                        href={`/api/bukti/${p.noPolisi}`} // Panggil API untuk download
+                                                        download={`Bukti_Pembayaran_ETLE_${p.noPolisi}.png`} // Nama file download
+                                                        className="text-green-600 hover:underline flex items-center gap-1 text-xs"
+                                                        title="Download Bukti Pembayaran (PNG)"
+                                                    >
+                                                        <FaDownload /> Unduh
+                                                    </a>
+                                                ) : '-'}
                                             </td>
                                         </tr>
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan="5" className="text-center py-10 text-slate-500">
-                                            Belum ada data pelanggaran yang tercatat.
+                                        <td colSpan="12" className="text-center py-10 text-slate-500">
+                                            Belum ada data pelanggaran atau pembayaran yang tercatat.
                                         </td>
                                     </tr>
                                 )}
