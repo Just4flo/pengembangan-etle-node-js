@@ -93,7 +93,7 @@ export default function RiwayatPembayaranPage() {
                                     <th scope="col" className="py-3 px-4">Status</th>
                                     <th scope="col" className="py-3 px-4">Tgl Bayar</th>
                                     {/* DIHAPUS: Kolom Konfirmasi Pengemudi */}
-                                    <th scope="col" className="py-3 px-4">Bukti Awal</th>
+                                    <th scope="col" className="py-3 px-4">Bukti Pelanggaran</th>
                                     <th scope="col" className="py-3 px-4">Bukti Bayar</th>
                                     <th scope="col" className="py-3 px-4">Aksi Download</th>
                                 </tr>
