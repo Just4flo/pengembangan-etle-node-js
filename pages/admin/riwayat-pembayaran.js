@@ -3,23 +3,19 @@ import { useState, useEffect } from 'react';
 import AdminLayout from '../../components/admin/AdminLayout';
 import { db } from '../../config/firebase';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
-import { FaSpinner, FaEye, FaDownload } from 'react-icons/fa'; // Tambahkan FaEye, FaDownload
+import { FaSpinner, FaEye, FaDownload, FaFileImage } from 'react-icons/fa'; // Tambah FaFileImage
 
 // Fungsi format tanggal (aman dari error timestamp)
 const formatTanggal = (timestamp) => {
-    // Cek jika timestamp valid dan punya method toDate
     if (timestamp && typeof timestamp.toDate === 'function') {
         try {
             return timestamp.toDate().toLocaleString('id-ID', {
                 year: 'numeric', month: 'short', day: 'numeric',
                 hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta'
             });
-        } catch (e) {
-            console.error("Error formatting date:", e);
-            return 'Error Format';
-        }
+        } catch (e) { console.error("Error formatting date:", e); return 'Error Format'; }
     }
-    return '-'; // Kembalikan strip jika tidak ada tanggal
+    return '-';
 };
 
 // Fungsi format Rupiah (aman dari error)
@@ -39,28 +35,21 @@ export default function RiwayatPembayaranPage() {
             setIsLoading(true);
             setError(null);
             try {
-                // 1. Ambil data dari DUA koleksi
+                // Ambil data dari DUA koleksi
                 const unpaidRef = collection(db, 'pelanggaran');
                 const paidRef = collection(db, 'pembayaran_berhasil');
 
                 const [unpaidSnapshot, paidSnapshot] = await Promise.all([
-                    getDocs(query(unpaidRef)), // Ambil semua dari 'pelanggaran'
-                    getDocs(query(paidRef)) // Ambil semua dari 'pembayaran_berhasil'
+                    getDocs(query(unpaidRef)),
+                    getDocs(query(paidRef))
                 ]);
 
-                // 2. Map data dan tambahkan ID jika perlu
                 const unpaidData = unpaidSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 const paidData = paidSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-                // 3. Gabungkan data
                 const allViolations = [...unpaidData, ...paidData];
 
-                // 4. Urutkan berdasarkan tanggal pelanggaran terbaru (jika ada)
-                allViolations.sort((a, b) => {
-                    const dateA = a.tanggalPelanggaran?.seconds || 0;
-                    const dateB = b.tanggalPelanggaran?.seconds || 0;
-                    return dateB - dateA; // Descending
-                });
+                // Urutkan berdasarkan tanggal pelanggaran terbaru
+                allViolations.sort((a, b) => (b.tanggalPelanggaran?.seconds || 0) - (a.tanggalPelanggaran?.seconds || 0));
 
                 setPayments(allViolations);
             } catch (err) {
@@ -70,19 +59,8 @@ export default function RiwayatPembayaranPage() {
                 setIsLoading(false);
             }
         };
-
         fetchAllViolations();
     }, []);
-
-    // Fungsi untuk mendapatkan detail konfirmasi pengemudi
-    const getDriverInfo = (konfirmasi) => {
-        if (!konfirmasi) return 'Belum Dikonfirmasi';
-        if (konfirmasi.statusKendaraan === 'sudah-dijual') return 'Dikonfirmasi Terjual';
-        if (konfirmasi.pengemudi) {
-            return `Pengemudi: ${konfirmasi.pengemudi.namaPengemudi} (SIM: ${konfirmasi.pengemudi.noSim})`;
-        }
-        return 'Data Konfirmasi Tidak Lengkap';
-    };
 
     return (
         <AdminLayout>
@@ -98,13 +76,12 @@ export default function RiwayatPembayaranPage() {
                         <span className="ml-4 text-slate-600">Memuat data...</span>
                     </div>
                 )}
-
                 {error && <p className="text-center text-red-600 bg-red-100 p-4 rounded-lg">{error}</p>}
 
                 {!isLoading && !error && (
                     <div className="overflow-x-auto relative shadow-md sm:rounded-lg">
                         <table className="w-full text-sm text-left text-gray-500">
-                            <thead className="text-xs text-gray-700 uppercase bg-gray-100">
+                            <thead className="text-xs text-gray-700 uppercase bg-gray-100 sticky top-0 z-10">
                                 <tr>
                                     <th scope="col" className="py-3 px-4">No</th>
                                     <th scope="col" className="py-3 px-4">No Polisi</th>
@@ -115,9 +92,10 @@ export default function RiwayatPembayaranPage() {
                                     <th scope="col" className="py-3 px-4">Denda</th>
                                     <th scope="col" className="py-3 px-4">Status</th>
                                     <th scope="col" className="py-3 px-4">Tgl Bayar</th>
-                                    <th scope="col" className="py-3 px-4">Konfirmasi Pengemudi</th>
-                                    <th scope="col" className="py-3 px-4">Bukti</th>
-                                    <th scope="col" className="py-3 px-4">Aksi</th>
+                                    {/* DIHAPUS: Kolom Konfirmasi Pengemudi */}
+                                    <th scope="col" className="py-3 px-4">Bukti Awal</th>
+                                    <th scope="col" className="py-3 px-4">Bukti Bayar</th>
+                                    <th scope="col" className="py-3 px-4">Aksi Download</th>
                                 </tr>
                             </thead>
                             <tbody className="text-gray-900">
@@ -141,24 +119,33 @@ export default function RiwayatPembayaranPage() {
                                                 </span>
                                             </td>
                                             <td className="py-3 px-4 whitespace-nowrap">{formatTanggal(p.tanggalPembayaran)}</td>
-                                            <td className="py-3 px-4 text-xs text-gray-600">{getDriverInfo(p.konfirmasiPengemudi)}</td>
+                                            {/* DIHAPUS: Kolom Konfirmasi Pengemudi */}
+                                            {/* Kolom Bukti Awal (Foto Pelanggaran) */}
                                             <td className="py-3 px-4">
                                                 {p.urlFotoBukti ? (
-                                                    <a href={p.urlFotoBukti} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline flex items-center gap-1">
-                                                        <FaEye /> Lihat
+                                                    <a href={p.urlFotoBukti} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline flex items-center gap-1 text-xs">
+                                                        <FaEye /> Lihat Awal
                                                     </a>
                                                 ) : '-'}
                                             </td>
+                                            {/* BARU: Kolom Bukti Pembayaran (Link ke PNG di Cloudinary/Storage) */}
                                             <td className="py-3 px-4">
-                                                {/* Tombol Download hanya muncul jika status "Sudah Dibayar" */}
+                                                {p.urlBuktiPembayaran ? ( // Cek field bukti pembayaran
+                                                    <a href={p.urlBuktiPembayaran} target="_blank" rel="noopener noreferrer" className="text-green-600 hover:underline flex items-center gap-1 text-xs">
+                                                        <FaFileImage /> Lihat Bayar
+                                                    </a>
+                                                ) : (p.status === 'Sudah Dibayar' ? <span className='text-xs text-gray-400'>Belum Ada</span> : '-')}
+                                            </td>
+                                            {/* BARU: Kolom Aksi Download Ulang */}
+                                            <td className="py-3 px-4">
                                                 {p.status === 'Sudah Dibayar' ? (
                                                     <a
-                                                        href={`/api/bukti/${p.noPolisi}`} // Panggil API untuk download
-                                                        download={`Bukti_Pembayaran_ETLE_${p.noPolisi}.png`} // Nama file download
-                                                        className="text-green-600 hover:underline flex items-center gap-1 text-xs"
-                                                        title="Download Bukti Pembayaran (PNG)"
+                                                        href={`/api/bukti/${p.noPolisi}`} // Panggil API untuk download ulang
+                                                        download={`Bukti_Pembayaran_ETLE_${p.noPolisi}.png`}
+                                                        className="text-indigo-600 hover:underline flex items-center gap-1 text-xs"
+                                                        title="Download Ulang Bukti Pembayaran (PNG)"
                                                     >
-                                                        <FaDownload /> Unduh
+                                                        <FaDownload /> Unduh Ulang
                                                     </a>
                                                 ) : '-'}
                                             </td>
