@@ -1,23 +1,79 @@
+// pages/admin/input-kendaraan.js
+
 import { useState } from 'react';
 import { doc, setDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../../config/firebase';
-import AdminLayout from '../../components/admin/AdminLayout'; // Kunci keamanan ada di sini
+import AdminLayout from '../../components/admin/AdminLayout';
 
 // Impor ikon
-import { FaCar, FaCog, FaUser, FaRoad, FaCalendarAlt, FaPalette, FaHashtag, FaPlus, FaTachometerAlt, FaSpinner } from 'react-icons/fa';
+import {
+    FaCar, FaCog, FaUser, FaRoad, FaCalendarAlt,
+    FaPalette, FaHashtag, FaPlus, FaTachometerAlt,
+    FaSpinner, FaMotorcycle, FaList
+} from 'react-icons/fa';
+
+// --- DATA KONSTANTA ---
+const VEHICLE_TYPES = [
+    { value: 'Motor', label: 'Sepeda Motor (Roda 2)' },
+    { value: 'Mobil', label: 'Mobil (Roda 4+)' }
+];
+
+const BRAND_OPTIONS = {
+    'Motor': [
+        'Honda',
+        'Yamaha',
+        'Kawasaki',
+        'Suzuki'
+    ],
+    'Mobil': [
+        'Toyota',
+        'Daihatsu',
+        'Honda',
+        'Mitsubishi Motors',
+        'Suzuki',
+        'Wuling',
+        'Hyundai'
+    ]
+};
 
 export default function InputKendaraanPage() {
     const [formData, setFormData] = useState({
-        noPolisi: '', noRangka: '', noMesin: '', namaPemilik: '', alamatPemilik: '',
-        merk: '', model: '', tipe: '', warna: '', tahunPembuatan: '', isiSilinder: '', berlakuSampai: ''
+        noPolisi: '',
+        noRangka: '',
+        noMesin: '',
+        namaPemilik: '',
+        alamatPemilik: '',
+        jenisKendaraan: '', // Field Baru
+        merk: '',
+        model: '',
+        tipe: '',
+        warna: '',
+        tahunPembuatan: '',
+        isiSilinder: '',
+        berlakuSampai: ''
     });
+
     const [isLoading, setIsLoading] = useState(false);
     const [message, setMessage] = useState({ type: '', text: '' });
 
     const handleInputChange = (e) => {
         const { id, value } = e.target;
-        const processedValue = id === 'noPolisi' ? value.toUpperCase() : value;
-        setFormData({ ...formData, [id]: processedValue });
+
+        let updatedFormData = { ...formData };
+
+        // Auto Uppercase untuk No Polisi
+        if (id === 'noPolisi') {
+            updatedFormData[id] = value.toUpperCase();
+        } else {
+            updatedFormData[id] = value;
+        }
+
+        // LOGIKA KHUSUS: Jika Jenis Kendaraan berubah, Reset Merk
+        if (id === 'jenisKendaraan') {
+            updatedFormData['merk'] = ''; // Reset merk karena listnya berubah
+        }
+
+        setFormData(updatedFormData);
     };
 
     const handleSubmit = async (e) => {
@@ -36,9 +92,12 @@ export default function InputKendaraanPage() {
             await setDoc(doc(db, 'kendaraan', formData.noPolisi), dataToSave);
 
             setMessage({ type: 'success', text: `Data kendaraan ${formData.noPolisi} berhasil ditambahkan!` });
+
+            // Reset Form
             setFormData({
                 noPolisi: '', noRangka: '', noMesin: '', namaPemilik: '', alamatPemilik: '',
-                merk: '', model: '', tipe: '', warna: '', tahunPembuatan: '', isiSilinder: '', berlakuSampai: ''
+                jenisKendaraan: '', merk: '', model: '', tipe: '', warna: '',
+                tahunPembuatan: '', isiSilinder: '', berlakuSampai: ''
             });
 
         } catch (error) {
@@ -49,8 +108,6 @@ export default function InputKendaraanPage() {
         }
     };
 
-    // Kabar baik! Perlindungan ini sudah aktif karena seluruh konten di bawah
-    // dibungkus oleh komponen <AdminLayout>.
     return (
         <AdminLayout>
             <div className="w-full max-w-4xl mx-auto p-8 bg-white rounded-2xl shadow-xl">
@@ -60,45 +117,79 @@ export default function InputKendaraanPage() {
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
+                    {/* Pesan Feedback */}
                     {message.text && (
                         <div className={`p-3 rounded-lg text-center text-sm ${message.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                             {message.text}
                         </div>
                     )}
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                        {/* --- Identitas Kendaraan --- */}
                         <div className="relative">
                             <FaCar className="absolute top-3.5 left-4 text-slate-400" />
-                            <input id="noPolisi" value={formData.noPolisi} onChange={handleInputChange} placeholder="No. Polisi" className="w-full p-3 pl-12 border rounded-lg text-slate-900" required />
+                            <input id="noPolisi" value={formData.noPolisi} onChange={handleInputChange} placeholder="No. Polisi (Contoh: B1234CD)" className="w-full p-3 pl-12 border rounded-lg text-slate-900" required />
                         </div>
+
+                        {/* --- BARU: Dropdown Jenis Kendaraan --- */}
                         <div className="relative">
-                            <FaHashtag className="absolute top-3.5 left-4 text-slate-400" />
-                            <input id="noRangka" value={formData.noRangka} onChange={handleInputChange} placeholder="No. Rangka" className="w-full p-3 pl-12 border rounded-lg text-slate-900" required />
+                            <FaList className="absolute top-3.5 left-4 text-slate-400" />
+                            <select
+                                id="jenisKendaraan"
+                                value={formData.jenisKendaraan}
+                                onChange={handleInputChange}
+                                className="w-full p-3 pl-12 border rounded-lg text-slate-900 bg-white"
+                                required
+                            >
+                                <option value="" disabled>Pilih Jenis Kendaraan</option>
+                                {VEHICLE_TYPES.map(type => (
+                                    <option key={type.value} value={type.value}>{type.label}</option>
+                                ))}
+                            </select>
                         </div>
-                        <div className="relative md:col-span-2">
-                            <FaCog className="absolute top-3.5 left-4 text-slate-400" />
-                            <input id="noMesin" value={formData.noMesin} onChange={handleInputChange} placeholder="No. Mesin" className="w-full p-3 pl-12 border rounded-lg text-slate-900" required />
-                        </div>
+
+                        {/* --- BARU: Dropdown Merk (Dinamis) --- */}
                         <div className="relative">
-                            <FaUser className="absolute top-3.5 left-4 text-slate-400" />
-                            <input id="namaPemilik" value={formData.namaPemilik} onChange={handleInputChange} placeholder="Nama Pemilik" className="w-full p-3 pl-12 border rounded-lg text-slate-900" required />
+                            {/* Ganti ikon berdasarkan jenis kendaraan */}
+                            {formData.jenisKendaraan === 'Motor' ? (
+                                <FaMotorcycle className="absolute top-3.5 left-4 text-slate-400" />
+                            ) : (
+                                <FaCar className="absolute top-3.5 left-4 text-slate-400" />
+                            )}
+
+                            <select
+                                id="merk"
+                                value={formData.merk}
+                                onChange={handleInputChange}
+                                className="w-full p-3 pl-12 border rounded-lg text-slate-900 bg-white"
+                                required
+                                disabled={!formData.jenisKendaraan} // Disable jika jenis belum dipilih
+                            >
+                                <option value="" disabled>
+                                    {formData.jenisKendaraan ? "Pilih Merk Kendaraan" : "Pilih Jenis Kendaraan Dahulu"}
+                                </option>
+                                {/* Render opsi merk berdasarkan jenis kendaraan yang dipilih */}
+                                {formData.jenisKendaraan && BRAND_OPTIONS[formData.jenisKendaraan].map(brand => (
+                                    <option key={brand} value={brand}>{brand}</option>
+                                ))}
+                            </select>
                         </div>
+
                         <div className="relative">
-                            <FaRoad className="absolute top-3.5 left-4 text-slate-400" />
-                            <input id="alamatPemilik" value={formData.alamatPemilik} onChange={handleInputChange} placeholder="Alamat Pemilik" className="w-full p-3 pl-12 border rounded-lg text-slate-900" required />
+                            <input id="model" value={formData.model} onChange={handleInputChange} placeholder="Model (Contoh: Avanza / Beat)" className="w-full p-3 border rounded-lg text-slate-900" required />
                         </div>
+
                         <div className="relative">
-                            <input id="merk" value={formData.merk} onChange={handleInputChange} placeholder="Merk (Contoh: Toyota)" className="w-full p-3 border rounded-lg text-slate-900" required />
+                            <input id="tipe" value={formData.tipe} onChange={handleInputChange} placeholder="Tipe (Contoh: Minibus / Scooter)" className="w-full p-3 border rounded-lg text-slate-900" required />
                         </div>
+
                         <div className="relative">
-                            <input id="model" value={formData.model} onChange={handleInputChange} placeholder="Model (Contoh: Avanza)" className="w-full p-3 border rounded-lg text-slate-900" required />
-                        </div>
-                        <div className="relative">
-                            <input id="tipe" value={formData.tipe} onChange={handleInputChange} placeholder="Tipe (Contoh: Minibus)" className="w-full p-3 border rounded-lg text-slate-900" required />
-                        </div>
-                        _                        <div className="relative">
                             <FaPalette className="absolute top-3.5 left-4 text-slate-400" />
                             <input id="warna" value={formData.warna} onChange={handleInputChange} placeholder="Warna" className="w-full p-3 pl-12 border rounded-lg text-slate-900" required />
                         </div>
+
+                        {/* --- Detail Teknis --- */}
                         <div className="relative">
                             <FaCalendarAlt className="absolute top-3.5 left-4 text-slate-400" />
                             <input type="number" id="tahunPembuatan" value={formData.tahunPembuatan} onChange={handleInputChange} placeholder="Tahun Pembuatan" className="w-full p-3 pl-12 border rounded-lg text-slate-900" required />
@@ -107,8 +198,29 @@ export default function InputKendaraanPage() {
                             <FaTachometerAlt className="absolute top-3.5 left-4 text-slate-400" />
                             <input type="number" id="isiSilinder" value={formData.isiSilinder} onChange={handleInputChange} placeholder="Isi Silinder (cc)" className="w-full p-3 pl-12 border rounded-lg text-slate-900" required />
                         </div>
+
+                        {/* --- Nomor Rangka & Mesin --- */}
+                        <div className="relative">
+                            <FaHashtag className="absolute top-3.5 left-4 text-slate-400" />
+                            <input id="noRangka" value={formData.noRangka} onChange={handleInputChange} placeholder="No. Rangka" className="w-full p-3 pl-12 border rounded-lg text-slate-900" required />
+                        </div>
+                        <div className="relative">
+                            <FaCog className="absolute top-3.5 left-4 text-slate-400" />
+                            <input id="noMesin" value={formData.noMesin} onChange={handleInputChange} placeholder="No. Mesin" className="w-full p-3 pl-12 border rounded-lg text-slate-900" required />
+                        </div>
+
+                        {/* --- Pemilik --- */}
+                        <div className="relative">
+                            <FaUser className="absolute top-3.5 left-4 text-slate-400" />
+                            <input id="namaPemilik" value={formData.namaPemilik} onChange={handleInputChange} placeholder="Nama Pemilik" className="w-full p-3 pl-12 border rounded-lg text-slate-900" required />
+                        </div>
+                        <div className="relative">
+                            <FaRoad className="absolute top-3.5 left-4 text-slate-400" />
+                            <input id="alamatPemilik" value={formData.alamatPemilik} onChange={handleInputChange} placeholder="Alamat Pemilik" className="w-full p-3 pl-12 border rounded-lg text-slate-900" required />
+                        </div>
+
                         <div className="relative md:col-span-2">
-                            <label htmlFor="berlakuSampai" className="block text-sm font-medium text-slate-500 mb-1">Berlaku Sampai</label>
+                            <label htmlFor="berlakuSampai" className="block text-sm font-medium text-slate-500 mb-1">Berlaku Sampai (Masa STNK)</label>
                             <input type="date" id="berlakuSampai" value={formData.berlakuSampai} onChange={handleInputChange} className="w-full p-3 border rounded-lg text-slate-900" required />
                         </div>
                     </div>

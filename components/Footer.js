@@ -13,7 +13,7 @@ export default function Footer() {
                     {/* Link Navigasi */}
                     <nav className="flex items-center space-x-6 text-sm text-gray-300">
                         <Link href="/posko" className="hover:text-blue-400 transition-colors duration-300">
-                            Posko ETLE
+                            Titik Kamera ETLE
                         </Link>
                         <Link href="/kebijakan-privasi" className="hover:text-blue-400 transition-colors duration-300">
                             Kebijakan Privasi
