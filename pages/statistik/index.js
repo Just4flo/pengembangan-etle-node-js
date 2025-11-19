@@ -14,6 +14,8 @@ import {
 export default function StatistikPage() {
     const [stats, setStats] = useState({
         totalPelanggaran: 0,
+        sudahDibayar: 0,
+        belumDibayar: 0,
         totalDendaDibayar: 0,
         topViolations: []
     });
@@ -59,6 +61,8 @@ export default function StatistikPage() {
 
                 setStats({
                     totalPelanggaran: countTotal,
+                    sudahDibayar: countPaid,
+                    belumDibayar: countUnpaid,
                     totalDendaDibayar: sumPaid,
                     topViolations: sortedViolations
                 });
@@ -76,6 +80,11 @@ export default function StatistikPage() {
     const formatRupiah = (num) => {
         return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(num);
     };
+
+    // Hitung persentase tuntas
+    const percentageDone = stats.totalPelanggaran > 0
+        ? Math.round((stats.sudahDibayar / stats.totalPelanggaran) * 100)
+        : 0;
 
     return (
         <div className="flex flex-col min-h-screen bg-gray-50">
@@ -106,10 +115,8 @@ export default function StatistikPage() {
                         </div>
                     ) : (
                         <>
-                            {/* --- 1. Kartu Statistik Utama (Hanya 2 Kartu) --- */}
-                            {/* Diubah menjadi grid-cols-2 untuk tampilan seimbang */}
+                            {/* --- 1. Kartu Statistik Utama (2 Kartu) --- */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-
                                 {/* Total Pelanggaran */}
                                 <div className="bg-white p-8 rounded-xl shadow-md border-b-4 border-blue-500 flex flex-col justify-between h-full">
                                     <div className="flex justify-between items-start mb-4">
@@ -176,32 +183,32 @@ export default function StatistikPage() {
                                     </div>
                                 </div>
 
-                                {/* Ringkasan Persentase */}
-                                <div className="bg-white p-8 rounded-xl shadow-md">
-                                    <div className="flex items-center gap-3 mb-6">
+                                {/* Ringkasan Persentase (Rasio Tuntas) */}
+                                <div className="bg-white p-8 rounded-xl shadow-md flex flex-col items-center justify-center">
+                                    <div className="flex items-center gap-3 mb-8 w-full">
                                         <FaChartPie className="text-purple-600 text-xl" />
                                         <h3 className="text-xl font-bold text-gray-800">Rasio Penyelesaian</h3>
                                     </div>
 
-                                    <div className="flex justify-center py-6">
-                                        {/* Lingkaran Chart CSS */}
-                                        <div className="relative w-48 h-48 rounded-full bg-gray-100 flex items-center justify-center"
-                                            style={{
-                                                background: `conic-gradient(#10b981 0% ${stats.totalPelanggaran > 0 ? (stats.sudahDibayar / stats.totalPelanggaran) * 100 : 0}%, #f97316 ${stats.totalPelanggaran > 0 ? (stats.sudahDibayar / stats.totalPelanggaran) * 100 : 0}% 100%)`
-                                            }}
-                                        >
-                                            <div className="w-36 h-36 bg-white rounded-full flex flex-col items-center justify-center shadow-inner">
-                                                <span className="text-4xl font-bold text-gray-800">
-                                                    {stats.totalPelanggaran > 0 ? Math.round((stats.sudahDibayar / stats.totalPelanggaran) * 100) : 0}%
-                                                </span>
-                                                <span className="text-sm text-gray-500 mt-1">Tuntas</span>
-                                            </div>
+                                    <div className="relative w-56 h-56 rounded-full bg-gray-100 flex items-center justify-center shadow-inner"
+                                        style={{
+                                            // Warna hijau (tuntas) vs oranye (sisa)
+                                            background: `conic-gradient(#10b981 0% ${percentageDone}%, #f97316 ${percentageDone}% 100%)`
+                                        }}
+                                    >
+                                        <div className="w-44 h-44 bg-white rounded-full flex flex-col items-center justify-center shadow-lg">
+                                            <span className="text-5xl font-extrabold text-slate-800">
+                                                {percentageDone}%
+                                            </span>
+                                            <span className="text-sm font-medium text-green-600 bg-green-50 px-3 py-1 rounded-full mt-2">
+                                                Tuntas
+                                            </span>
                                         </div>
                                     </div>
 
-                                    <div className="space-y-3 mt-4">
-                                        
-                                    </div>
+                                    <p className="text-center text-gray-400 text-sm mt-8">
+                                        Persentase pelanggaran yang telah diselesaikan pembayarannya.
+                                    </p>
                                 </div>
 
                             </div>
