@@ -122,8 +122,8 @@ const InputGroup = ({ icon: Icon, id, placeholder, value, error, onChange, maxLe
             {/* Status Message */}
             {!error && getStatusMessage() && (
                 <p className={`text-xs mt-1 flex items-center gap-1 ${status === 'perfect' ? 'text-green-600' :
-                        status === 'too-short' ? 'text-orange-600' :
-                            status === 'too-long' ? 'text-red-600' : 'text-blue-600'
+                    status === 'too-short' ? 'text-orange-600' :
+                        status === 'too-long' ? 'text-red-600' : 'text-blue-600'
                     }`}>
                     {getStatusMessage()}
                 </p>
@@ -133,7 +133,7 @@ const InputGroup = ({ icon: Icon, id, placeholder, value, error, onChange, maxLe
             {maxLength && value && (
                 <div className="text-right">
                     <span className={`text-xs ${value.length > maxLength ? 'text-red-600 font-bold' :
-                            value.length === maxLength ? 'text-green-600 font-bold' : 'text-slate-500'
+                        value.length === maxLength ? 'text-green-600 font-bold' : 'text-slate-500'
                         }`}>
                         {value.length}/{maxLength}
                     </span>
@@ -152,8 +152,29 @@ export default function AdminDashboard() {
     const [isLoading, setIsLoading] = useState(false);
     const [message, setMessage] = useState({ type: '', text: '' });
 
+    // State untuk mengontrol apakah field denda sedang difocus
+    const [isDendaFocused, setIsDendaFocused] = useState(false);
+
     // State Error
     const [errors, setErrors] = useState({});
+
+    // Fungsi untuk handle focus pada field denda
+    const handleDendaFocus = () => {
+        setIsDendaFocused(true);
+        // Jika nilai denda adalah 0, kosongkan field saat focus
+        if (formData.denda === 0) {
+            setFormData(prev => ({ ...prev, denda: '' }));
+        }
+    };
+
+    // Fungsi untuk handle blur pada field denda
+    const handleDendaBlur = () => {
+        setIsDendaFocused(false);
+        // Jika field denda kosong saat blur, set ke 0
+        if (formData.denda === '') {
+            setFormData(prev => ({ ...prev, denda: 0 }));
+        }
+    };
 
     // --- VALIDASI ---
     const validateField = (id, value) => {
@@ -210,6 +231,17 @@ export default function AdminDashboard() {
             processedValue = value.toUpperCase().replace(/[^A-Z0-9]/g, '');
         }
 
+        // Handle khusus untuk field denda
+        if (id === 'denda') {
+            // Jika field sedang difocus dan value kosong, biarkan kosong
+            if (isDendaFocused && value === '') {
+                processedValue = '';
+            } else {
+                // Konversi ke number, jika kosong set ke 0
+                processedValue = value === '' ? 0 : parseInt(value, 10) || 0;
+            }
+        }
+
         updatedFormData[id] = processedValue;
 
         // Validasi Real-time
@@ -220,11 +252,6 @@ export default function AdminDashboard() {
         if (id === 'jenisPelanggaran') {
             const fineAmount = violationFines[value] !== undefined ? violationFines[value] : 0;
             updatedFormData.denda = fineAmount;
-        }
-
-        // Logika Denda Manual (jika diedit)
-        if (id === 'denda') {
-            updatedFormData.denda = value === '' ? 0 : parseInt(value, 10);
         }
 
         setFormData(updatedFormData);
@@ -301,7 +328,7 @@ export default function AdminDashboard() {
                 <form onSubmit={handleSubmit} className="space-y-6">
                     {message.text && (
                         <div className={`p-3 rounded-lg text-center text-sm ${message.type === 'success' ? 'bg-green-100 text-green-800' :
-                                message.type === 'error' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'
+                            message.type === 'error' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'
                             }`}>
                             {message.text}
                         </div>
@@ -363,7 +390,7 @@ export default function AdminDashboard() {
                                 value={formData.jenisPelanggaran}
                                 onChange={handleInputChange}
                                 className={`w-full p-3 pl-12 border rounded-lg text-slate-900 bg-white outline-none transition-colors ${errors.jenisPelanggaran ? 'border-red-500 bg-red-50' :
-                                        formData.jenisPelanggaran ? 'border-green-500 bg-green-50' : 'border-slate-300'
+                                    formData.jenisPelanggaran ? 'border-green-500 bg-green-50' : 'border-slate-300'
                                     }`}
                                 required
                             >
@@ -387,10 +414,13 @@ export default function AdminDashboard() {
                                 id="denda"
                                 value={formData.denda}
                                 onChange={handleInputChange}
+                                onFocus={handleDendaFocus}
+                                onBlur={handleDendaBlur}
                                 placeholder="Jumlah Denda"
                                 className="w-full p-3 pl-12 border border-slate-300 rounded-lg text-slate-900 bg-slate-50"
                                 readOnly={formData.jenisPelanggaran !== VIOLATION_TYPES.LAINNYA}
                                 type="number"
+                                min="0"
                             />
                         </div>
 
@@ -412,11 +442,11 @@ export default function AdminDashboard() {
                     <div>
                         <label className="block text-sm font-medium text-slate-700 mb-2">Foto Bukti Pelanggaran</label>
                         <div className={`mt-2 flex justify-center rounded-lg border border-dashed px-6 py-10 transition-colors ${!buktiFoto && errors.buktiFoto ? 'border-red-500 bg-red-50' :
-                                buktiFoto ? 'border-green-500 bg-green-50' : 'border-slate-300'
+                            buktiFoto ? 'border-green-500 bg-green-50' : 'border-slate-300'
                             }`}>
                             <div className="text-center">
                                 <FaFileUpload className={`mx-auto h-12 w-12 ${!buktiFoto && errors.buktiFoto ? 'text-red-400' :
-                                        buktiFoto ? 'text-green-400' : 'text-slate-300'
+                                    buktiFoto ? 'text-green-400' : 'text-slate-300'
                                     }`} />
                                 <div className="mt-4 flex text-sm leading-6 text-slate-600">
                                     <label htmlFor="file-upload" className="relative cursor-pointer rounded-md bg-white font-semibold text-blue-600 hover:text-blue-500">
