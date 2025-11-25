@@ -8,18 +8,37 @@ import { FaSpinner } from 'react-icons/fa';
 
 // Data Kontak dan Media Sosial
 const contactInfo = [
-    { icon: '☎️', title: 'Call Center', detail: '1500-669' },
+    { icon: '☎️', title: 'Call Center', detail: '1-500-669' }, // Call Center NTMC
     { icon: '✉️', title: 'Email', detail: 'info@korlantas.polri.go.id' },
     { icon: '🌐', title: 'Website', detail: 'korlantas.polri.go.id' },
 ];
 
 const socialMedia = [
-    { icon: '/icons/facebook.svg', name: 'Facebook', handle: 'NTMC POLRI', url: '#' },
-    { icon: '/icons/twitter.svg', name: 'Twitter (X)', handle: '@ntmcpoldametro', url: '#' },
-    { icon: '/icons/instagram.svg', name: 'Instagram', handle: '@ntmcpoldametro', url: '#' },
-    { icon: '/icons/tiktok.svg', name: 'TikTok', handle: '@ntmcpoldametro', url: '#' },
+    {
+        icon: '/icons/facebook.svg',
+        name: 'Facebook',
+        handle: 'NTMC POLRI',
+        url: 'https://www.facebook.com/NTMCPolri'
+    },
+    {
+        icon: '/icons/twitter.svg',
+        name: 'Twitter (X)',
+        handle: '@NTMCLantasPolri',
+        url: 'https://twitter.com/NTMCLantasPolri'
+    },
+    {
+        icon: '/icons/instagram.svg',
+        name: 'Instagram',
+        handle: '@ntmc_polri',
+        url: 'https://www.instagram.com/ntmc_polri/'
+    },
+    {
+        icon: '/icons/tiktok.svg',
+        name: 'TikTok',
+        handle: '@ntmcpolri',
+        url: 'https://www.tiktok.com/@ntmcpolri'
+    },
 ];
-
 export default function KontakPage() {
     const [formData, setFormData] = useState({ name: '', email: '', message: '' });
     const [isSubmitting, setIsSubmitting] = useState(false);
