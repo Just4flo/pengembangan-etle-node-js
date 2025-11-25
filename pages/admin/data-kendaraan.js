@@ -100,24 +100,32 @@ export default function DataKendaraanPage() {
     };
 
     // 2. Fungsi Validasi Ketat
-    const validateEditForm = () => {
-        // Validasi No Rangka (Tepat 17)
-        if (editFormData.noRangka.length !== 17) {
-            alert(`No. Rangka harus tepat 17 karakter. (Saat ini: ${editFormData.noRangka.length})`);
-            return false;
-        }
-        // Validasi No Mesin (10-14)
-        if (editFormData.noMesin.length < 10 || editFormData.noMesin.length > 14) {
-            alert(`No. Mesin harus antara 10 sampai 14 karakter. (Saat ini: ${editFormData.noMesin.length})`);
-            return false;
-        }
-        // Validasi Field Kosong
-        if (!editFormData.namaPemilik || !editFormData.merk || !editFormData.tipe) {
-            alert("Semua field wajib diisi.");
-            return false;
-        }
-        return true;
-    };
+// 2. Fungsi Validasi Ketat
+const validateEditForm = () => {
+    // Validasi No Rangka (Tepat 17)
+    if (editFormData.noRangka.length !== 17) {
+        alert(`No. Rangka harus tepat 17 karakter. (Saat ini: ${editFormData.noRangka.length})`);
+        return false;
+    }
+    // Validasi No Mesin (10-14)
+    if (editFormData.noMesin.length < 10 || editFormData.noMesin.length > 14) {
+        alert(`No. Mesin harus antara 10 sampai 14 karakter. (Saat ini: ${editFormData.noMesin.length})`);
+        return false;
+    }
+    
+    // Validasi Isi Silinder (Minimal 50)
+    if (editFormData.isiSilinder && editFormData.isiSilinder < 50) {
+        alert("Isi silinder minimal 50 cc");
+        return false;
+    }
+    
+    // Validasi Field Kosong
+    if (!editFormData.namaPemilik || !editFormData.merk || !editFormData.tipe) {
+        alert("Semua field wajib diisi.");
+        return false;
+    }
+    return true;
+};
 
     const handleUpdate = async (e) => {
         e.preventDefault();
@@ -288,8 +296,18 @@ export default function DataKendaraanPage() {
                                     <div><label className="block text-sm font-medium text-gray-700 mb-1">Model</label><input type="text" name="model" value={editFormData.model} onChange={handleEditChange} className="w-full p-2 border rounded text-gray-900" required /></div>
                                     <div><label className="block text-sm font-medium text-gray-700 mb-1">Warna</label><input type="text" name="warna" value={editFormData.warna} onChange={handleEditChange} className="w-full p-2 border rounded text-gray-900" required /></div>
                                     <div><label className="block text-sm font-medium text-gray-700 mb-1">Tahun</label><input type="number" name="tahunPembuatan" value={editFormData.tahunPembuatan} onChange={handleEditChange} className="w-full p-2 border rounded text-gray-900" required /></div>
-                                    <div><label className="block text-sm font-medium text-gray-700 mb-1">CC</label><input type="number" name="isiSilinder" value={editFormData.isiSilinder} onChange={handleEditChange} className="w-full p-2 border rounded text-gray-900" required /></div>
-
+                                   <div>
+    <label className="block text-sm font-medium text-gray-700 mb-1">CC</label>
+    <input 
+        type="number" 
+        name="isiSilinder" 
+        value={editFormData.isiSilinder} 
+        onChange={handleEditChange} 
+        className="w-full p-2 border rounded text-gray-900" 
+        min="50"
+        required 
+    />
+</div>
                                     {/* No Rangka & Mesin (Dengan Validasi Panjang) */}
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">No. Rangka (17 Karakter)</label>
