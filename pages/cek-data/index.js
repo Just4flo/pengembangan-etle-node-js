@@ -1,5 +1,3 @@
-// pages/cek-data/index.js
-
 import { useState } from 'react';
 import Navbar from "../../components/Navbar";
 import Footer from '../../components/Footer';
@@ -17,49 +15,82 @@ export default function CekDataPage() {
     const [noMesin, setNoMesin] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [vehicleData, setVehicleData] = useState(null);
+    const [formError, setFormError] = useState(''); // State untuk error validasi form
+
+    // Fungsi untuk mereset form
+    const handleReset = () => {
+        setNoPolisi('');
+        setNoRangka('');
+        setNoMesin('');
+        setVehicleData(null);
+        setFormError('');
+    };
 
     const handleSubmit = async (event) => {
         event.preventDefault();
-        setIsLoading(true);
         setVehicleData(null);
+        setFormError('');
+
+        // 1. BERSIHKAN INPUT
+        // Hapus spasi, ubah ke uppercase, dan hapus karakter non-alphanumeric
+        const cleanNoPolisi = noPolisi.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        const cleanNoRangka = noRangka.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        const cleanNoMesin = noMesin.toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+        // 2. VALIDASI KETAT
+        // Validasi No Polisi (4-9 karakter)
+        if (cleanNoPolisi.length < 4 || cleanNoPolisi.length > 9) {
+            setFormError('Nomor Polisi harus terdiri dari 4 hingga 9 karakter huruf dan angka.');
+            return;
+        }
+
+        // Validasi No Rangka (Tepat 17 karakter)
+        if (cleanNoRangka.length !== 17) {
+            setFormError(`Nomor Rangka harus tepat 17 karakter. (Anda memasukkan ${cleanNoRangka.length} karakter)`);
+            return;
+        }
+
+        // Validasi No Mesin (10-14 karakter)
+        if (cleanNoMesin.length < 10 || cleanNoMesin.length > 14) {
+            setFormError('Nomor Mesin harus terdiri dari 10 hingga 14 karakter.');
+            return;
+        }
+
+        // Jika lolos validasi, mulai loading
+        setIsLoading(true);
 
         try {
-            const cleanNoPolisi = noPolisi.toUpperCase().replace(/\s/g, '');
-            const cleanNoRangka = noRangka.trim();
-            const cleanNoMesin = noMesin.trim();
-
+            // 3. QUERY FIREBASE
             const kendaraanRef = collection(db, 'kendaraan');
+            // Cari berdasarkan No Polisi yang sudah dibersihkan
             const q = query(kendaraanRef, where("noPolisi", "==", cleanNoPolisi));
             const querySnapshot = await getDocs(q);
 
             if (!querySnapshot.empty) {
                 const data = querySnapshot.docs[0].data();
-                const dbRangka = data.noRangka ? data.noRangka.trim().toLowerCase() : '';
-                const dbMesin = data.noMesin ? data.noMesin.trim().toLowerCase() : '';
 
-                if (dbRangka === cleanNoRangka.toLowerCase() && dbMesin === cleanNoMesin.toLowerCase()) {
+                // Ambil data dari DB dan bersihkan formatnya untuk perbandingan
+                const dbRangka = data.noRangka ? data.noRangka.toUpperCase().replace(/[^A-Z0-9]/g, '') : '';
+                const dbMesin = data.noMesin ? data.noMesin.toUpperCase().replace(/[^A-Z0-9]/g, '') : '';
+
+                // 4. PENCOCOKAN DATA (VERIFIKASI)
+                if (dbRangka === cleanNoRangka && dbMesin === cleanNoMesin) {
                     setVehicleData({ found: true, details: data });
                 } else {
-                    setVehicleData({ found: false, message: 'Kombinasi No. Rangka dan No. Mesin tidak cocok.' });
+                    setVehicleData({ found: false, message: 'Kombinasi No. Rangka dan No. Mesin tidak cocok dengan data kami.' });
                 }
             } else {
                 setVehicleData({ found: false, message: 'Data kendaraan dengan No. Polisi tersebut tidak ditemukan.' });
             }
         } catch (error) {
             console.error("Error:", error);
-            setVehicleData({ found: false, message: 'Terjadi kesalahan koneksi server.' });
+            setVehicleData({ found: false, message: 'Terjadi kesalahan koneksi server. Silakan coba lagi nanti.' });
         } finally {
             setIsLoading(false);
         }
     };
 
-    const handleReset = () => {
-        setNoPolisi('');
-        setNoRangka('');
-        setNoMesin('');
-        setVehicleData(null);
-    };
-
+    // Helper format tanggal
     const formatDate = (timestamp) => {
         if (timestamp && typeof timestamp.toDate === 'function') {
             return timestamp.toDate().toLocaleDateString('id-ID', {
@@ -85,21 +116,27 @@ export default function CekDataPage() {
 
                         {/* --- FORM INPUT --- */}
                         <form onSubmit={handleSubmit} className="space-y-8">
+
+                            {/* Input No Polisi */}
                             <div>
-                                {/* Hapus 'block' disini karena sudah ada 'flex' */}
                                 <label className="text-sm font-bold text-gray-700 mb-1 flex items-center">
                                     <FaCar className="mr-2" /> No. Polisi/NRKB <span className="text-red-500 ml-1">*</span>
                                 </label>
                                 <input
                                     type="text"
                                     value={noPolisi}
-                                    onChange={(e) => setNoPolisi(e.target.value.toUpperCase())}
-                                    className="w-full py-3 border-b-2 border-gray-300 focus:border-blue-600 bg-transparent outline-none transition-colors text-black text-lg placeholder-gray-400 font-medium"
+                                    // Sanitasi input saat diketik (hanya huruf angka, uppercase)
+                                    onChange={(e) => setNoPolisi(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
+                                    className={`w-full py-3 border-b-2 bg-transparent outline-none transition-colors text-black text-lg placeholder-gray-400 font-medium ${formError && (noPolisi.length < 4 || noPolisi.length > 9) ? 'border-red-500' : 'border-gray-300 focus:border-blue-600'
+                                        }`}
                                     placeholder="Contoh: B1234XYZ"
+                                    maxLength={9} // Batas HTML
                                     required
                                 />
+                                <p className="text-xs text-gray-400 mt-1">Min. 4, Max. 9 karakter (Huruf & Angka)</p>
                             </div>
 
+                            {/* Input No Rangka */}
                             <div>
                                 <label className="text-sm font-bold text-gray-700 mb-1 flex items-center">
                                     <FaHashtag className="mr-2" /> No. Rangka <span className="text-red-500 ml-1">*</span>
@@ -107,13 +144,17 @@ export default function CekDataPage() {
                                 <input
                                     type="text"
                                     value={noRangka}
-                                    onChange={(e) => setNoRangka(e.target.value)}
-                                    className="w-full py-3 border-b-2 border-gray-300 focus:border-blue-600 bg-transparent outline-none transition-colors text-black text-lg placeholder-gray-400 font-medium"
-                                    placeholder="Masukkan nomor rangka kendaraan"
+                                    onChange={(e) => setNoRangka(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
+                                    className={`w-full py-3 border-b-2 bg-transparent outline-none transition-colors text-black text-lg placeholder-gray-400 font-medium ${formError && noRangka.length !== 17 ? 'border-red-500' : 'border-gray-300 focus:border-blue-600'
+                                        }`}
+                                    placeholder="Masukkan nomor rangka (17 digit)"
+                                    maxLength={17} // Batas HTML
                                     required
                                 />
+                                <p className="text-xs text-gray-400 mt-1">Wajib 17 karakter</p>
                             </div>
 
+                            {/* Input No Mesin */}
                             <div>
                                 <label className="text-sm font-bold text-gray-700 mb-1 flex items-center">
                                     <FaCog className="mr-2" /> No. Mesin <span className="text-red-500 ml-1">*</span>
@@ -121,12 +162,22 @@ export default function CekDataPage() {
                                 <input
                                     type="text"
                                     value={noMesin}
-                                    onChange={(e) => setNoMesin(e.target.value)}
-                                    className="w-full py-3 border-b-2 border-gray-300 focus:border-blue-600 bg-transparent outline-none transition-colors text-black text-lg placeholder-gray-400 font-medium"
-                                    placeholder="Masukkan nomor mesin kendaraan"
+                                    onChange={(e) => setNoMesin(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
+                                    className={`w-full py-3 border-b-2 bg-transparent outline-none transition-colors text-black text-lg placeholder-gray-400 font-medium ${formError && (noMesin.length < 10 || noMesin.length > 14) ? 'border-red-500' : 'border-gray-300 focus:border-blue-600'
+                                        }`}
+                                    placeholder="Masukkan nomor mesin"
+                                    maxLength={14} // Batas HTML Max
                                     required
                                 />
+                                <p className="text-xs text-gray-400 mt-1">Min. 10, Max. 14 karakter</p>
                             </div>
+
+                            {/* Pesan Error Validasi Form */}
+                            {formError && (
+                                <div className="p-3 bg-red-50 border-l-4 border-red-500 text-red-700 text-sm rounded">
+                                    <strong>Perhatian:</strong> {formError}
+                                </div>
+                            )}
 
                             <div className="flex gap-4 pt-4">
                                 <button
@@ -147,7 +198,7 @@ export default function CekDataPage() {
                             </div>
                         </form>
 
-                        {/* --- HASIL / ILUSTRASI --- */}
+                        {/* --- KOLOM KANAN: HASIL / ILUSTRASI --- */}
                         <div className="flex flex-col justify-center h-full min-h-[350px]">
 
                             {!vehicleData && !isLoading && (

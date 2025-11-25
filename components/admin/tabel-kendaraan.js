@@ -1,8 +1,8 @@
 // components/admin/TabelKendaraan.js
 import React from 'react';
-import { FaCar, FaIdCard, FaCalendarAlt, FaCogs, FaPalette, FaTachometerAlt } from 'react-icons/fa';
+import { FaCar, FaIdCard, FaCalendarAlt, FaPalette, FaTachometerAlt, FaEdit, FaTrash } from 'react-icons/fa';
 
-// Helper format tanggal (Aman untuk Timestamp Firebase)
+// Helper format tanggal
 const formatTanggal = (timestamp) => {
     if (!timestamp || typeof timestamp.toDate !== 'function') return '-';
     try {
@@ -12,7 +12,8 @@ const formatTanggal = (timestamp) => {
     } catch (e) { return 'Error'; }
 };
 
-export default function TabelKendaraan({ data = [] }) {
+// Tambahkan prop 'onDelete'
+export default function TabelKendaraan({ data = [], onEdit, onDelete }) {
     if (!data || data.length === 0) {
         return (
             <div className="text-center py-12 bg-white rounded-xl shadow border border-slate-200">
@@ -35,6 +36,7 @@ export default function TabelKendaraan({ data = [] }) {
                         <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Spesifikasi</th>
                         <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">No. Rangka & Mesin</th>
                         <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Masa Berlaku</th>
+                        <th className="px-6 py-4 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Aksi</th>
                     </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-slate-200 text-sm">
@@ -69,7 +71,7 @@ export default function TabelKendaraan({ data = [] }) {
                                 </div>
                             </td>
 
-                            {/* Kolom 3: Spesifikasi (Merk, Model, Warna, CC) */}
+                            {/* Kolom 3: Spesifikasi */}
                             <td className="px-6 py-4">
                                 <div className="space-y-1">
                                     <p className="font-medium text-slate-800">{item.merk} {item.model}</p>
@@ -106,6 +108,26 @@ export default function TabelKendaraan({ data = [] }) {
                                 <div className="flex items-center gap-2 text-slate-700 font-medium">
                                     <FaCalendarAlt className="text-blue-500" />
                                     {formatTanggal(item.berlakuSampai)}
+                                </div>
+                            </td>
+
+                            {/* Kolom 6: Aksi (Edit & Hapus) */}
+                            <td className="px-6 py-4 text-center whitespace-nowrap">
+                                <div className="flex justify-center items-center gap-2">
+                                    <button
+                                        onClick={() => onEdit(item)}
+                                        className="text-indigo-600 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 p-2 rounded-lg transition-colors"
+                                        title="Edit Data"
+                                    >
+                                        <FaEdit size={16} />
+                                    </button>
+                                    <button
+                                        onClick={() => onDelete(item)} // Panggil fungsi onDelete
+                                        className="text-red-600 hover:text-red-900 bg-red-50 hover:bg-red-100 p-2 rounded-lg transition-colors"
+                                        title="Hapus Data"
+                                    >
+                                        <FaTrash size={16} />
+                                    </button>
                                 </div>
                             </td>
 
