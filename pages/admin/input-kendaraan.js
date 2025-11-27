@@ -138,29 +138,33 @@ export default function InputKendaraanPage() {
     };
 
     // --- VALIDASI FIELD INDIVIDUAL ---
-    const validateField = (id, value) => {
-        let errorMsg = '';
+const validateField = (id, value) => {
+    let errorMsg = '';
 
-        switch (id) {
-            case 'noPolisi':
-                if (value.length > 0 && (value.length < 4 || value.length > 9)) errorMsg = '4-9 Karakter';
-                break;
-            case 'noRangka':
-                if (value.length > 0 && value.length !== 17) errorMsg = `Wajib 17 Karakter (Saat ini: ${value.length})`;
-                break;
-            case 'noMesin':
-                if (value.length > 0 && (value.length < 10 || value.length > 14)) errorMsg = '10-14 Karakter';
-                break;
-            case 'tahunPembuatan':
-                if (value && (value < 1950 || value > new Date().getFullYear() + 1)) errorMsg = 'Tahun tidak valid';
-                break;
-            default:
-                break;
-        }
+    switch (id) {
+        case 'noPolisi':
+            if (value.length > 0 && (value.length < 4 || value.length > 9)) errorMsg = '4-9 Karakter';
+            break;
+        case 'noRangka':
+            if (value.length > 0 && value.length !== 17) errorMsg = `Wajib 17 Karakter (Saat ini: ${value.length})`;
+            break;
+        case 'noMesin':
+            if (value.length > 0 && (value.length < 10 || value.length > 14)) errorMsg = '10-14 Karakter';
+            break;
+        case 'tahunPembuatan':
+            if (value && (value < 1950 || value > new Date().getFullYear() + 1)) errorMsg = 'Tahun tidak valid';
+            break;
+        case 'isiSilinder':
+            if (value && value < 50) errorMsg = 'Minimal 50 cc';
+            break;
+        default:
+            break;
+    }
 
-        setErrors(prev => ({ ...prev, [id]: errorMsg }));
-        return errorMsg === '';
-    };
+    setErrors(prev => ({ ...prev, [id]: errorMsg }));
+    return errorMsg === '';
+};
+
 
     const handleInputChange = (e) => {
         const { id, value } = e.target;
@@ -185,26 +189,28 @@ export default function InputKendaraanPage() {
     };
 
     // Validasi Menyeluruh sebelum Submit
-    const isFormValid = () => {
-        const newErrors = {};
-        let isValid = true;
+const isFormValid = () => {
+    const newErrors = {};
+    let isValid = true;
 
-        // Cek Format
-        if (formData.noPolisi.length < 4 || formData.noPolisi.length > 9) { newErrors.noPolisi = '4-9 Karakter'; isValid = false; }
-        if (formData.noRangka.length !== 17) { newErrors.noRangka = 'Wajib 17 Karakter'; isValid = false; }
-        if (formData.noMesin.length < 10 || formData.noMesin.length > 14) { newErrors.noMesin = '10-14 Karakter'; isValid = false; }
+    // Cek Format
+    if (formData.noPolisi.length < 4 || formData.noPolisi.length > 9) { newErrors.noPolisi = '4-9 Karakter'; isValid = false; }
+    if (formData.noRangka.length !== 17) { newErrors.noRangka = 'Wajib 17 Karakter'; isValid = false; }
+    if (formData.noMesin.length < 10 || formData.noMesin.length > 14) { newErrors.noMesin = '10-14 Karakter'; isValid = false; }
+    if (formData.isiSilinder && formData.isiSilinder < 50) { newErrors.isiSilinder = 'Minimal 50 cc'; isValid = false; }
 
-        // Cek Kosong (Required Fields)
-        Object.keys(formData).forEach(key => {
-            if (!formData[key] && !newErrors[key]) {
-                newErrors[key] = 'Wajib diisi';
-                isValid = false;
-            }
-        });
+    // Cek Kosong (Required Fields)
+    Object.keys(formData).forEach(key => {
+        if (!formData[key] && !newErrors[key]) {
+            newErrors[key] = 'Wajib diisi';
+            isValid = false;
+        }
+    });
 
-        setErrors(newErrors);
-        return isValid;
-    };
+    setErrors(newErrors);
+    return isValid;
+};
+
 
     const handleSubmit = async (e) => {
         if (e) e.preventDefault();

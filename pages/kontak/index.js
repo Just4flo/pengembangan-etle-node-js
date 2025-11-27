@@ -8,36 +8,61 @@ import { FaSpinner } from 'react-icons/fa';
 
 // Data Kontak dan Media Sosial
 const contactInfo = [
+<<<<<<< HEAD
     { icon: '☎️', title: 'Call Center', detail: '110' }, // Layanan Darurat Kepolisian Jabar
     { icon: '📱', title: 'Hotline', detail: '0822-1112-4007' }, // Hotline Pengaduan Polda Jabar
     { icon: '✉️', title: 'Email', detail: 'rtmcpoldajabar@gmail.com' }, // Email umum RTMC
     { icon: '🌐', title: 'Website', detail: 'jabar.polri.go.id' },
+=======
+    { icon: '☎️', title: 'Call Center', detail: '1-500-669' }, // Call Center NTMC
+    { icon: '✉️', title: 'Email', detail: 'info@korlantas.polri.go.id' },
+    { icon: '🌐', title: 'Website', detail: 'korlantas.polri.go.id' },
+>>>>>>> 76ad91d76cd39ce94b73a1febdffc40dcebe9a6a
 ];
 
 const socialMedia = [
     {
         icon: '/icons/facebook.svg',
         name: 'Facebook',
+<<<<<<< HEAD
         handle: 'RTMC Polda Jabar',
         url: 'https://www.facebook.com/rtmcpoldajabar'
+=======
+        handle: 'NTMC POLRI',
+        url: 'https://www.facebook.com/NTMCPolri'
+>>>>>>> 76ad91d76cd39ce94b73a1febdffc40dcebe9a6a
     },
     {
         icon: '/icons/twitter.svg',
         name: 'Twitter (X)',
+<<<<<<< HEAD
         handle: '@RTMCPoldaJabar',
+=======
+        handle: '@NTMCLantasPolri',
+>>>>>>> 76ad91d76cd39ce94b73a1febdffc40dcebe9a6a
         url: 'https://twitter.com/NTMCLantasPolri'
     },
     {
         icon: '/icons/instagram.svg',
         name: 'Instagram',
+<<<<<<< HEAD
         handle: '@rtmcpoldajabar',
         url: 'https://www.instagram.com/rtmcpoldajabar/'
+=======
+        handle: '@ntmc_polri',
+        url: 'https://www.instagram.com/ntmc_polri/'
+>>>>>>> 76ad91d76cd39ce94b73a1febdffc40dcebe9a6a
     },
     {
         icon: '/icons/tiktok.svg',
         name: 'TikTok',
+<<<<<<< HEAD
         handle: '@rtmcpoldajabar',
         url: 'https://www.tiktok.com/@rtmcpoldajabar'
+=======
+        handle: '@ntmcpolri',
+        url: 'https://www.tiktok.com/@ntmcpolri'
+>>>>>>> 76ad91d76cd39ce94b73a1febdffc40dcebe9a6a
     },
 ];
 export default function KontakPage() {
