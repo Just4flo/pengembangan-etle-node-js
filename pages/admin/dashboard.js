@@ -230,7 +230,6 @@ export default function AdminDashboard() {
             processedValue = value.toUpperCase().replace(/[^A-Z0-9]/g, '');
         }
 
-<<<<<<< HEAD
         if (id === 'denda') {
             if (isDendaFocused && value === '') {
                 processedValue = '';
@@ -238,7 +237,6 @@ export default function AdminDashboard() {
                 processedValue = value === '' ? 0 : parseInt(value, 10) || 0;
             }
         }
-=======
         // Handle khusus untuk field denda
         if (id === 'denda') {
             // Jika field sedang difocus dan value kosong, biarkan kosong
@@ -251,7 +249,6 @@ export default function AdminDashboard() {
         }
 
         updatedFormData[id] = processedValue;
->>>>>>> 76ad91d76cd39ce94b73a1febdffc40dcebe9a6a
 
         updatedFormData[id] = processedValue;
         const error = validateField(id, processedValue);
